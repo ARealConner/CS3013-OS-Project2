@@ -1,0 +1,23 @@
+In our solution, we have implemented a system that ensures fair access to the field for all types
+of sports: baseball, football, and rugby. We have used mutexes and condition variables to manage
+access to the field and ensure that only one type of sport is played at a time.
+
+Each sport has a specific number of players required to start a game. For baseball and football, the
+number of players required is fixed, while for rugby, the number can vary from 2 to 30, as long as
+it's an even number. When a player arrives, they check if there are enough players of their type to
+start a game. If not, they wait until there are enough players. This is done using a condition
+variable that is signaled whenever a player arrives or leaves.
+
+To ensure that no type of sport is deprived of the field, we have implemented a fairness
+mechanism. This mechanism works by keeping track of the number of games played by each type
+of sport. When a game ends, the type of sport that has played the least number of games gets
+priority. If there are enough players of that type to start a game, they are allowed to enter
+the field. If not, the type of sport that has played the second least number of games gets priority, and so on. This ensures that all types of sports get a fair chance to play.
+
+In addition, to prevent a type of sport from monopolizing the field by continuously having new players
+join the field every time a game ends, we have implemented a rule that a new game cannot start until
+all the players from the previous game have left the field. This is done using a condition variable
+that is signaled whenever a game ends.
+
+By using these mechanisms, our solution ensures that all types of sports have fair and equal access
+to the field, thus avoiding thread starvation.
