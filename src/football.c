@@ -1,39 +1,41 @@
-#include "../include/football.h"
+#include "../include/shared.h"
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-#define FOOTBALL_PLAYERS 44
-#define FOOTBALL_GAME_SIZE 22
+void *football_player_thread(void *arg) {
+	int id = *(int *)arg;
+	free(arg);
 
-pthread_mutex_t football_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t football_cond = PTHREAD_COND_INITIALIZER;
-int football_players_waiting = 0;
+	usleep(rand() % 100000); // Simulate random arrival
 
-void* play_football(void* arg) {
-    Player* player = (Player*) arg;
+	pthread_mutex_lock(&lock);
+	while (current_game == RUGBY_GAME || football_players_on_field >= 22) {
+		pthread_cond_wait(&cond_football, &lock);
+	}
 
-    pthread_mutex_lock(&football_mutex);
-    football_players_waiting++;
+	if (football_players_on_field == 0) {
+		printf("[FOOTBALL] Team Ready\n");
+	}
+	football_players_on_field++;
+	if (football_players_on_field == 1) {
+		current_game = FOOTBALL_GAME;
+		printf("[FOOTBALL: %d] Game <<STARTED>>\n", id);
+	}
+	pthread_mutex_unlock(&lock);
 
-    while (football_players_waiting < FOOTBALL_GAME_SIZE) {
-        pthread_cond_wait(&football_cond, &football_mutex);
-    }
+	printf("[FOOTBALL: %d] Playing at Position %d\n", id, football_players_on_field);
 
-    printf("Football player %d is ready to play.\n", player->id);
-    football_players_waiting--;
+	usleep(rand() % 100000); // Simulate game duration
 
-    if (football_players_waiting >= FOOTBALL_GAME_SIZE) {
-        pthread_cond_signal(&football_cond);
-    }
+	pthread_mutex_lock(&lock);
+	football_players_on_field--;
+	if (football_players_on_field == 0) {
+		current_game = NO_GAME;
+		printf("[FOOTBALL: %d] Game <<ENDED>>\n", id);
+		pthread_cond_broadcast(&cond_rugby); // Signal rugby players
+	}
+	pthread_mutex_unlock(&lock);
 
-    pthread_mutex_unlock(&football_mutex);
-
-    // Simulate the game
-    int game_time = rand() % 10 + 1; // Game time is a random number between 1 and 10
-    sleep(game_time);
-
-    printf("Football player %d has finished playing.\n", player->id);
-
-    return NULL;
+	return NULL;
 }

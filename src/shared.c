@@ -1,0 +1,23 @@
+#include "../include/shared.h"
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_rugby = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond_football = PTHREAD_COND_INITIALIZER;
+GameState current_game = NO_GAME;
+int rugby_players_on_field = 0;
+int football_players_on_field = 0;
+
+void initialize_shared_resources() {
+	pthread_mutex_init(&lock, NULL);
+	pthread_cond_init(&cond_rugby, NULL);
+	pthread_cond_init(&cond_football, NULL);
+	current_game = NO_GAME;
+	rugby_players_on_field = 0;
+	football_players_on_field = 0;
+}
+
+void destroy_shared_resources() {
+	pthread_mutex_destroy(&lock);
+	pthread_cond_destroy(&cond_rugby);
+	pthread_cond_destroy(&cond_football);
+}

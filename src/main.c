@@ -1,60 +1,40 @@
+#include "../include/shared.h"
+#include "../include/rugby.h"
+#include "../include/football.h"
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
-#include "../include/player.h"
-#include "../include/baseball.h"
-#include "../include/football.h"
-#include "../include/rugby.h"
-#include "../include/utils.h"
 
-#define BASEBALL_PLAYERS 36
-#define FOOTBALL_PLAYERS 44
-#define RUGBY_PLAYERS 60
-
-void* start_game(void* arg) {
-    Player* player = (Player*) arg;
-
-    if (player->type == "baseball") {
-        play_baseball(player);
-    } else if (player->type == "football") {
-        play_football(player);
-    } else if (player->type == "rugby") {
-        play_rugby(player);
-    }
-
-    free(player);
-    return NULL;
-}
+#define NUM_RUGBY_PLAYERS 60
+#define NUM_FOOTBALL_PLAYERS 44
 
 int main() {
-    pthread_t threads[BASEBALL_PLAYERS + FOOTBALL_PLAYERS + RUGBY_PLAYERS];
-    int i;
+	initialize_shared_resources();
 
-    // Seed the random number generator
-    seed_random_number_generator_from_file("seed.txt");
+	pthread_t rugby_threads[NUM_RUGBY_PLAYERS];
+	pthread_t football_threads[NUM_FOOTBALL_PLAYERS];
 
-    // Create and start the baseball players
-    for (i = 0; i < BASEBALL_PLAYERS; i++) {
-        Player* player = create_player(i, "baseball");
-        pthread_create(&threads[i], NULL, start_game, player);
-    }
+	for (int i = 0; i < NUM_RUGBY_PLAYERS; i++) {
+		int *id = malloc(sizeof(int));
+		*id = i + 1;
+		pthread_create(&rugby_threads[i], NULL, rugby_player_thread, id);
+	}
 
-    // Create and start the football players
-    for (i = 0; i < FOOTBALL_PLAYERS; i++) {
-        Player* player = create_player(i, "football");
-        pthread_create(&threads[i + BASEBALL_PLAYERS], NULL, start_game, player);
-    }
+	for (int i = 0; i < NUM_FOOTBALL_PLAYERS; i++) {
+		int *id = malloc(sizeof(int));
+		*id = i + 1;
+		pthread_create(&football_threads[i], NULL, football_player_thread, id);
+	}
 
-    // Create and start the rugby players
-    for (i = 0; i < RUGBY_PLAYERS; i++) {
-        Player* player = create_player(i, "rugby");
-        pthread_create(&threads[i + BASEBALL_PLAYERS + FOOTBALL_PLAYERS], NULL, start_game, player);
-    }
+	for (int i = 0; i < NUM_RUGBY_PLAYERS; i++) {
+		pthread_join(rugby_threads[i], NULL);
+	}
 
-    // Wait for all the players to finish
-    for (i = 0; i < BASEBALL_PLAYERS + FOOTBALL_PLAYERS + RUGBY_PLAYERS; i++) {
-        pthread_join(threads[i], NULL);
-    }
+	for (int i = 0; i < NUM_FOOTBALL_PLAYERS; i++) {
+		pthread_join(football_threads[i], NULL);
+	}
 
-    return 0;
+	destroy_shared_resources();
+
+	return 0;
 }

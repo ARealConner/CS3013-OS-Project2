@@ -12,4 +12,7 @@ add_executable(Project2 src/main.c
         include/baseball.h
         src/baseball.c
         include/player.h
-        src/player.c)
+        src/player.c
+        include/rugby.h
+        src/shared.c
+        include/shared.h)

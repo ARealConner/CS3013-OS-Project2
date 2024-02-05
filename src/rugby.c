@@ -1,39 +1,39 @@
-#include "../include/rugby.h"
+#include "../include/shared.h"
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-#define RUGBY_PLAYERS 60
-#define RUGBY_GAME_SIZE 30
+void *rugby_player_thread(void *arg) {
+	int id = *(int *)arg;
+	free(arg);
 
-pthread_mutex_t rugby_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t rugby_cond = PTHREAD_COND_INITIALIZER;
-int rugby_players_waiting = 0;
+	usleep(rand() % 100000); // Simulate random arrival
 
-void* play_rugby(void* arg) {
-    Player* player = (Player*) arg;
+	pthread_mutex_lock(&lock);
+	while (current_game == FOOTBALL_GAME || rugby_players_on_field >= 30) {
+		pthread_cond_wait(&cond_rugby, &lock);
+	}
 
-    pthread_mutex_lock(&rugby_mutex);
-    rugby_players_waiting++;
+	printf("[Rugby: %d] Pair Ready\n", id);
+	rugby_players_on_field++;
+	if (rugby_players_on_field == 1) {
+		current_game = RUGBY_GAME;
+		printf("[Rugby: %d] Game <<STARTED>>\n", id);
+	}
+	pthread_mutex_unlock(&lock);
 
-    while (rugby_players_waiting % 2 != 0 || rugby_players_waiting > RUGBY_GAME_SIZE) {
-        pthread_cond_wait(&rugby_cond, &rugby_mutex);
-    }
+	printf("[Rugby: %d] Playing at position %d\n", id, rugby_players_on_field);
 
-    printf("Rugby player %d is ready to play.\n", player->id);
-    rugby_players_waiting--;
+	usleep(rand() % 100000); // Simulate game duration
 
-    if (rugby_players_waiting % 2 == 0 && rugby_players_waiting <= RUGBY_GAME_SIZE) {
-        pthread_cond_signal(&rugby_cond);
-    }
+	pthread_mutex_lock(&lock);
+	rugby_players_on_field--;
+	if (rugby_players_on_field == 0) {
+		current_game = NO_GAME;
+		printf("[Rugby: %d] Game <<ENDED>>\n", id);
+		pthread_cond_broadcast(&cond_football); // Signal football players
+	}
+	pthread_mutex_unlock(&lock);
 
-    pthread_mutex_unlock(&rugby_mutex);
-
-    // Simulate the game
-    int game_time = rand() % 10 + 1; // Game time is a random number between 1 and 10
-    sleep(game_time);
-
-    printf("Rugby player %d has finished playing.\n", player->id);
-
-    return NULL;
+	return NULL;
 }

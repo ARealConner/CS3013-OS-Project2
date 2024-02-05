@@ -1,9 +1,14 @@
-#ifndef PROJECT2_FOOTBALL_H
-#define PROJECT2_FOOTBALL_H
+#ifndef FOOTBALL_H
+#define FOOTBALL_H
 
-#include "player.h"
-#include <pthread.h>
+#include "shared.h"
 
-void* play_football(void* arg);
+#define MAX_FOOTBALL_PLAYERS 44
 
-#endif //PROJECT2_FOOTBALL_H
+typedef struct {
+	int id;
+} FootballPlayer;
+
+void *football_player_thread(void *arg);
+
+#endif // FOOTBALL_H

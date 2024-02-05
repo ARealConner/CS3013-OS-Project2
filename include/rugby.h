@@ -1,9 +1,14 @@
-#ifndef PROJECT2_RUGBY_H
-#define PROJECT2_RUGBY_H
+#ifndef RUGBY_H
+#define RUGBY_H
 
-#include "player.h"
-#include <pthread.h>
+#include "shared.h"
 
-void* play_rugby(void* arg);
+#define MAX_RUGBY_PLAYERS 60
 
-#endif //PROJECT2_RUGBY_H
+typedef struct {
+	int id;
+} RugbyPlayer;
+
+void *rugby_player_thread(void *arg);
+
+#endif // RUGBY_H
