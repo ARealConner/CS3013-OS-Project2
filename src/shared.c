@@ -6,6 +6,7 @@ pthread_cond_t cond_football = PTHREAD_COND_INITIALIZER;
 GameState current_game = NO_GAME;
 int rugby_players_on_field = 0;
 int football_players_on_field = 0;
+int is_rugby_turn = 1;  // Initialize to 1 to indicate rugby gets the first turn
 
 void initialize_shared_resources() {
 	pthread_mutex_init(&lock, NULL);
@@ -14,6 +15,7 @@ void initialize_shared_resources() {
 	current_game = NO_GAME;
 	rugby_players_on_field = 0;
 	football_players_on_field = 0;
+	is_rugby_turn = 1;  // Initialize for rugby to start first
 }
 
 void destroy_shared_resources() {
