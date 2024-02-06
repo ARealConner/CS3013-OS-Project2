@@ -1,15 +1,15 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -pthread
-DEPS = include/player.h include/baseball.h include/football.h include/rugby.h include/utils.h
-OBJ = src/player.c src/baseball.c src/football.c src/rugby.c src/utils.c src/main.c
+DEPS = include/utils.h include/rugby.h include/football.h include/baseball.h include/shared.h
+OBJ = src/main.o src/utils.o src/rugby.o src/football.o src/baseball.o src/shared.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-main: $(OBJ)
+Project2: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm -f *.o main
+	rm -f $(OBJ) Project2

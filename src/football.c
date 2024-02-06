@@ -1,54 +1,102 @@
 #include "../include/shared.h"
+#include "../include/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 
-extern pthread_cond_t cond_football_start; // New condition variable
+#define PLAYERS_PER_TEAM 11
+#define INDENT ""
 
-void *football_player_thread(void *arg) {
- int id = *(int *)arg;
- free(arg);
 
- usleep(rand() % 100000); // Simulate random arrival
+/**
+ * @brief Function representing the behavior of a football player thread.
+ *
+ * @param arg Pointer to the thread's ID.
+ * @return void* Always returns NULL.
+ */
+void* football_player_thread(void* arg)
+{
+	int id = *(int*)arg;
+	free(arg);
 
- pthread_mutex_lock(&lock);
- while (current_game != NO_GAME || current_game == RUGBY_GAME || is_rugby_turn != 0) {
-  pthread_cond_wait(&cond_football, &lock);
- }
+	for (int i = 0; i < MAX_GAMES_PER_PLAYER; i++)
+	{
+		sleep(rand() % MAX_SLEEP_SECONDS); // Simulate random arrival
 
- football_players_on_field++;
- // Indicate team is ready when the first player arrives
- if (football_players_on_field == 1) {
-  printf("[FOOTBALL] Team Ready\n");
- }
+		pthread_mutex_lock(&lock);
+		// Ensure the game is not in progress and the required number of players is not reached
+		while (game_in_progress || active_football_players >= REQUIRED_FOOTBALL_PLAYERS)
+		{
+			if (terminate)
+			{
+				pthread_mutex_unlock(&lock);
+				return NULL;
+			}
+			pthread_cond_wait(&cond_football, &lock);
+		}
 
- // Start the game when the required number of players is reached
- if (football_players_on_field == 22 && current_game != FOOTBALL_GAME) {
-  printf("[FOOTBALL: %d] Game <<STARTED>>\n", id); // Ensure the start message is printed once
-  current_game = FOOTBALL_GAME;
-  pthread_cond_broadcast(&cond_football_start); // Signal all football players that the game has started
- }
- pthread_mutex_unlock(&lock);
+		active_football_players++;
+		int player_number = active_football_players;
+		// Indicate the team is ready when all the players arrive
+		if (active_football_players == PLAYERS_PER_TEAM)
+		{
+			printf(INDENT "[FOOTBALL] Team A Ready\n");
+		}
+		if (active_football_players == REQUIRED_FOOTBALL_PLAYERS)
+		{
+			printf(INDENT "[FOOTBALL] Team B Ready\n");
+		}
 
- pthread_mutex_lock(&lock);
- while (current_game != FOOTBALL_GAME) {
-  pthread_cond_wait(&cond_football_start, &lock); // Wait for the game to start
- }
- pthread_mutex_unlock(&lock);
+		// Wait for the game to start
+		while (current_game != FOOTBALL_GAME || (active_football_players < REQUIRED_FOOTBALL_PLAYERS && !game_in_progress))
+		{
+			if (terminate)
+			{
+				pthread_mutex_unlock(&lock);
+				return NULL;
+			}
+			pthread_cond_wait(&cond_football, &lock);
+		}
 
- printf("[FOOTBALL: %d] Playing at Position %d\n", id, football_players_on_field);
+		// Start the game when the required number of players is reached
+		if (player_number == REQUIRED_FOOTBALL_PLAYERS)
+		{
+			printf(INDENT "[FOOTBALL: %d] Game <<STARTED>>\n", id); // Ensure the start message is printed once
+			game_in_progress = IN_PROGRESS;
+			pthread_cond_broadcast(&cond_football); // signal the players to start the game
+		}
+		pthread_mutex_unlock(&lock);
 
- usleep(rand() % 100000); // Simulate game duration
+		printf(INDENT "[FOOTBALL: %d] Playing at Position %d\n", id, player_number);
 
- pthread_mutex_lock(&lock);
- football_players_on_field--;
- if (football_players_on_field == 0) {
-  printf("[FOOTBALL: %d] Game <<ENDED>>\n", id);
-  current_game = NO_GAME;
-  is_rugby_turn = 1; // Switch back to rugby
-  pthread_cond_broadcast(&cond_rugby); // Signal rugby players
- }
- pthread_mutex_unlock(&lock);
+		sleep(rand() % MAX_SLEEP_SECONDS); // Simulate game duration
 
- return NULL;
+		pthread_mutex_lock(&lock);
+		active_football_players--;
+		if (active_football_players == 0)
+		{
+			printf(INDENT "[FOOTBALL: %d] Game <<ENDED>>\n", id);
+			game_in_progress = NOT_IN_PROGRESS;
+			current_game = choose_next_sport();
+			// get the cond to signal the next game
+			pthread_cond_t* cond_to_signal = get_cond_for_game(current_game);
+			// Signal the next game
+			if (cond_to_signal != NULL)
+			{
+				pthread_cond_broadcast(cond_to_signal);
+			} else {
+				terminate = 1;
+				// signal everyone so they can quit
+				pthread_cond_broadcast(&cond_rugby);
+				pthread_cond_broadcast(&cond_baseball);
+				pthread_cond_broadcast(&cond_football);
+			}
+		}
+		pthread_mutex_unlock(&lock);
+	}
+	pthread_mutex_lock(&lock);
+	remaining_football_plays--;
+	pthread_mutex_unlock(&lock);
+	return NULL;
 }

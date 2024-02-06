@@ -12,7 +12,8 @@ To ensure that no type of sport is deprived of the field, we have implemented a 
 mechanism. This mechanism works by keeping track of the number of games played by each type
 of sport. When a game ends, the type of sport that has played the least number of games gets
 priority. If there are enough players of that type to start a game, they are allowed to enter
-the field. If not, the type of sport that has played the second least number of games gets priority, and so on. This ensures that all types of sports get a fair chance to play.
+the field. If not, the type of sport that has played the second least number of games gets priority,
+and so on. This ensures that all types of sports get a fair chance to play.
 
 In addition, to prevent a type of sport from monopolizing the field by continuously having new players
 join the field every time a game ends, we have implemented a rule that a new game cannot start until
